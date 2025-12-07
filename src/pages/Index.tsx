@@ -214,7 +214,7 @@ const Index = () => {
         )}
 
         {/* Footer with designer link */}
-        <footer className="fixed bottom-8 right-8 text-right">
+        <footer className="fixed bottom-2 right-8 text-right">
           <a 
             href="https://www.mariatanganelli.com" 
             target="_blank" 
