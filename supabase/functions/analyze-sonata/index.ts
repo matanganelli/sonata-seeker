@@ -28,20 +28,32 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Analyzing MIDI file: ${fileName}`);
+    console.log(`Analyzing MIDI file: ${fileName}, size: ${midiData.length} bytes (base64)`);
+    console.log(`Python backend URL: ${PYTHON_BACKEND_URL}`);
 
     // Convert base64 to binary
     const binaryData = Uint8Array.from(atob(midiData), c => c.charCodeAt(0));
     const blob = new Blob([binaryData], { type: 'audio/midi' });
+    console.log(`Binary size: ${binaryData.length} bytes`);
 
     // Forward the file to the Python backend as FormData
     const backendFormData = new FormData();
     backendFormData.append('midi_file', blob, fileName || 'file.mid');
 
+    console.log('Sending request to Python backend...');
+    
+    // Add timeout with AbortController (120 seconds for large files)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
+
     const response = await fetch(`${PYTHON_BACKEND_URL}/analyze`, {
       method: 'POST',
       body: backendFormData,
+      signal: controller.signal,
     });
+    
+    clearTimeout(timeoutId);
+    console.log(`Python backend responded with status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -62,9 +74,14 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in analyze-sonata function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const isTimeout = errorMessage.includes('abort');
+    
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        error: isTimeout ? 'Request timeout - the analysis is taking too long' : errorMessage 
+      }),
+      { status: isTimeout ? 504 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
