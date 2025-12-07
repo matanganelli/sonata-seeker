@@ -1,73 +1,88 @@
-# Welcome to your Lovable project
+🎼 Sonata Form Analyzer
+Automatic structural analysis of classical music using Music21 + FastAPI + React (Vite + TS + shadcn + Tailwind)
 
-## Project info
+Este projeto é uma aplicação completa (frontend + backend) desenvolvida para analisar arquivos MIDI e identificar automaticamente a estrutura formal de uma sonata clássica — incluindo exposição, desenvolvimento, recapitulação, temas e cadências — usando técnicas de análise musical computacional.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+O objetivo final é fornecer uma ferramenta moderna, visual e técnica para estudos de análise musical, musicologia computacional e aplicações educacionais.
 
-## How can I edit this code?
+🚀 Tecnologias Utilizadas
+Frontend
 
-There are several ways of editing your application.
+⚡ Vite — build rápido e moderno
 
-**Use Lovable**
+🟦 TypeScript — tipagem robusta
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+⚛️ React — interface reativa
 
-Changes made via Lovable will be committed automatically to this repo.
+🎨 Tailwind CSS — design responsivo
 
-**Use your preferred IDE**
+🧩 shadcn-ui — componentes acessíveis e elegantes
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+🔌 Axios / Fetch — comunicação com API
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Backend
 
-Follow these steps:
+🐍 Python 3.10+
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+🎼 Music21 — análise musical (key, cadences, themes, offsets, durations)
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+🚀 FastAPI — API moderna, tipada e rápida
 
-# Step 3: Install the necessary dependencies.
-npm i
+🔄 Uvicorn — servidor ASGI
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+☁️ Google Cloud Run — deploy serverless (opcional)
 
-**Edit a file directly in GitHub**
+🧠 Como o Analisador Funciona
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+O backend recebe um arquivo .mid e executa:
 
-**Use GitHub Codespaces**
+1. Extração temporal real (corrigida)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+➡️ Usa score.secondsMap para evitar erros de minutagem.
+➡️ Converte todas as durações para segundos reais, não quarterLength.
 
-## What technologies are used for this project?
+2. Key Area Detection
 
-This project is built with:
+Analisa regiões tonais em janelas móveis de compassos.
+Retorna:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+tonalidade
 
-## How can I deploy this project?
+modo
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+correlação
 
-## Can I connect a custom domain to my Lovable project?
+início/fim em segundos
 
-Yes, you can!
+3. Thematic Material Detection
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Detecta padrões melódicos recorrentes avaliando:
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+contorno
+
+densidade rítmica
+
+alcance melódico
+
+4. Cadence Detection
+
+Identifica:
+
+Autênticas (V–I)
+
+Meias cadências (terminando em V)
+Baseado em RomanNumerals calculados com o Music21.
+
+5. Sonata Section Estimation
+
+Determina:
+
+Exposição
+
+Desenvolvimento
+
+Recapitulação
+
+Coda
+
+Usa modelos heurísticos + análise tonal.
