@@ -6,10 +6,10 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy all files from the current directory
+COPY . .
 
-COPY main.py .
+RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 8080
 
