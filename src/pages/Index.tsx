@@ -215,7 +215,7 @@ const Index = () => {
       </div>
 
       {/* Footer with designer link - static at bottom of page */}
-      <footer className="absolute bottom-4 right-8 text-right">
+      <footer className="absolute bottom-1 right-8 text-right">
         <p className="text-xs text-yellow-400/70">Design for MA</p>
         <a 
           href="https://www.mariatanganelli.com" 
