@@ -304,23 +304,54 @@ async def analyze_midi(midi_file: UploadFile = File(...)):
     if not midi_file.filename.lower().endswith((".mid", ".midi")):
         raise HTTPException(400, "File must be MIDI")
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mid") as tmp:
-        tmp.write(await midi_file.read())
-        path = tmp.name
-
+    path = None
     try:
-        score = converter.parse(path)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mid") as tmp:
+            content = await midi_file.read()
+            if not content:
+                raise HTTPException(400, "Empty file received")
+            tmp.write(content)
+            path = tmp.name
 
-        # CORREÇÃO AQUI: agora duration = segundos reais
-        duration = get_true_duration_seconds(score)
+        try:
+            score = converter.parse(path)
+        except Exception as e:
+            raise HTTPException(400, f"Failed to parse MIDI file: {str(e)}")
 
-        key_areas = analyze_key_areas(score)
-        themes = detect_thematic_material(score)
-        cadences = detect_cadences(score)
+        if score is None:
+            raise HTTPException(400, "Could not parse MIDI file")
+
+        # Get duration in seconds
+        try:
+            duration = get_true_duration_seconds(score)
+        except Exception as e:
+            duration = 180.0  # fallback to 3 minutes
+
+        if duration <= 0:
+            duration = 180.0
+
+        # Analyze components with error handling
+        try:
+            key_areas = analyze_key_areas(score)
+        except Exception as e:
+            print(f"Key analysis error: {e}")
+            key_areas = []
+
+        try:
+            themes = detect_thematic_material(score)
+        except Exception as e:
+            print(f"Theme detection error: {e}")
+            themes = []
+
+        try:
+            cadences = detect_cadences(score)
+        except Exception as e:
+            print(f"Cadence detection error: {e}")
+            cadences = []
 
         sections = identify_sonata_sections(duration, key_areas, themes, cadences)
 
-        overall = float(np.mean([s["confidence"] for s in sections]))
+        overall = float(np.mean([s["confidence"] for s in sections])) if sections else 0.75
 
         return {
             "sections": sections,
@@ -333,8 +364,14 @@ async def analyze_midi(midi_file: UploadFile = File(...)):
             ],
         }
 
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        raise HTTPException(500, f"Analysis failed: {str(e)}")
     finally:
-        os.unlink(path)
+        if path and os.path.exists(path):
+            os.unlink(path)
 
 
 # ================================================================
