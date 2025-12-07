@@ -1,19 +1,28 @@
 """
-Sonata Form Analyzer - Python Backend for Google Cloud Run
-Uses music21 to analyze MIDI files and detect sonata form structure.
-
-Deploy:
-gcloud run deploy sonata-analyzer --source . --allow-unauthenticated
+Sonata Form Analyzer - Render Cloud Safe Version
 """
 
 import os
 import tempfile
 from typing import List, Dict, Any
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
 import music21
 from music21 import converter, tempo, analysis
 import numpy as np
+
+
+# ================================================================
+#   FIX: Disable MusicXML, MuseScore & external dependencies
+# ================================================================
+music21.environment.set('musicxmlPath', None)
+music21.environment.set('musescoreDirectPNGPath', None)
+music21.environment.set('autoDownload', False)
+music21.environment.set('printFormat', None)
+music21.environment.set('pdfPath', None)
+
 
 app = FastAPI(title="Sonata Form Analyzer")
 
@@ -30,41 +39,42 @@ app.add_middleware(
 )
 
 
-
 # ================================================================
-#   TIME HANDLING (CORREÇÃO DO PROBLEMA DE MINUTAGEM)
+#   TIME HANDLING
 # ================================================================
 
 def get_seconds_map(score):
     try:
-        return score.secondsMap
+        sm = score.secondsMap
+        if sm:
+            return sm
     except:
-        return []
+        pass
+    return []
 
 
 def get_true_duration_seconds(score):
-    """Return actual duration of MIDI in seconds with multi-strategy fallback."""
+    """Return a safe duration in seconds for cloud environments."""
 
-    # Method 1: highestTime (quarterLength)
-    try:
-        highest = score.highestTime
-        if highest > 0:
-            marks = list(score.recurse().getElementsByClass(tempo.MetronomeMark))
-            bpm = marks[0].number if marks else 120
-            return float(highest) * (60 / bpm)
-    except:
-        pass
-
-    # Method 2: secondsMap
-    try:
-        sm = get_seconds_map(score)
-        if sm:
+    # Method 1: secondsMap
+    sm = get_seconds_map(score)
+    if sm:
+        try:
             end_times = [
                 (event.get("offsetSeconds") or 0) + (event.get("durationSeconds") or 0)
                 for event in sm
             ]
             if end_times:
                 return float(max(end_times))
+        except:
+            pass
+
+    # Method 2: highestTime * BPM
+    try:
+        highest = score.highestTime
+        marks = list(score.recurse().getElementsByClass(tempo.MetronomeMark))
+        bpm = marks[0].number if marks else 120
+        return float(highest) * (60 / bpm)
     except:
         pass
 
@@ -80,16 +90,8 @@ def get_true_duration_seconds(score):
     except:
         pass
 
-    # Method 4: score.duration
-    try:
-        marks = list(score.recurse().getElementsByClass(tempo.MetronomeMark))
-        bpm = marks[0].number if marks else 120
-        return float(score.duration.quarterLength) * (60 / bpm)
-    except:
-        pass
-
-    return 180.0  # fallback
-
+    # Fallback
+    return 180.0
 
 
 def quarter_to_seconds(score, q):
@@ -103,32 +105,29 @@ def get_bpm(score):
     return marks[0].number if marks else 120
 
 
-
 # ================================================================
-#   IMPROVED KEY ANALYSIS
+#   KEY ANALYSIS
 # ================================================================
 
 def analyze_global_key(score):
     try:
-        key_result = score.analyze('key')
-        if key_result:
-            return {
-                "key": str(key_result),
-                "mode": key_result.mode,
-                "tonic": str(key_result.tonic),
-                "correlation": float(getattr(key_result, 'correlationCoefficient', 0.8))
-            }
+        k = score.analyze('key')
+        return {
+            "key": str(k),
+            "mode": k.mode,
+            "tonic": str(k.tonic),
+            "correlation": float(getattr(k, 'correlationCoefficient', 0.8))
+        }
     except:
-        pass
-    return None
-
+        return None
 
 
 def analyze_key_by_notes(score, duration):
     key_areas = []
+    all_notes = []
+
     bpm = get_bpm(score)
 
-    all_notes = []
     for note in score.recurse().notes:
         offset_sec = float(note.offset) * (60 / bpm)
         dur_sec = float(note.duration.quarterLength) * (60 / bpm)
@@ -148,10 +147,7 @@ def analyze_key_by_notes(score, duration):
         start = i * seg_dur
         end = (i + 1) * seg_dur
 
-        seg_notes = [
-            n for n in all_notes
-            if start <= n["offset_seconds"] < end
-        ]
+        seg_notes = [n for n in all_notes if start <= n["offset_seconds"] < end]
 
         if len(seg_notes) < 4:
             continue
@@ -174,7 +170,6 @@ def analyze_key_by_notes(score, duration):
             continue
 
     return key_areas
-
 
 
 def analyze_key_areas(score, duration):
@@ -204,7 +199,6 @@ def analyze_key_areas(score, duration):
     return key_areas, global_key
 
 
-
 # ================================================================
 #   THEMATIC MATERIAL
 # ================================================================
@@ -217,12 +211,11 @@ def get_pitch_midi(n):
     return 60
 
 
-
 def detect_thematic_material(score):
-    if not score.parts:
+    try:
+        notes = list(score.parts[0].recurse().notes) if score.parts else list(score.recurse().notes)
+    except:
         notes = list(score.recurse().notes)
-    else:
-        notes = list(score.parts[0].recurse().notes)
 
     themes = []
     if len(notes) < 10:
@@ -236,6 +229,7 @@ def detect_thematic_material(score):
 
         pitches = [get_pitch_midi(n) for n in segment]
         contour = np.diff(pitches)
+
         durations = [n.duration.quarterLength for n in segment]
         avg_dur = np.mean(durations)
 
@@ -246,7 +240,7 @@ def detect_thematic_material(score):
             "start_offset": quarter_to_seconds(score, start_q),
             "end_offset": quarter_to_seconds(score, end_q),
             "melodic_range": int(max(pitches) - min(pitches)),
-            "avg_interval": float(np.mean(np.abs(contour))) if len(contour) > 0 else 0,
+            "avg_interval": float(np.mean(np.abs(contour))) if len(contour) else 0,
             "rhythmic_density": float(1 / avg_dur) if avg_dur else 1.0,
             "contour_direction": "ascending" if np.sum(contour) > 0 else "descending",
         })
@@ -254,23 +248,19 @@ def detect_thematic_material(score):
     return themes
 
 
-
 # ================================================================
-#   CHORD + CADENCE DETECTION (CORRIGIDO)
+#   CADENCE DETECTION
 # ================================================================
 
 def detect_cadences(score):
     cadences = []
 
-    # Garante que há compassos
     try:
         score_meas = score.makeMeasures()
     except:
         score_meas = score
 
-    # Cria acordes (crucial para MIDI)
     chordified = score_meas.chordify()
-
     measures = list(chordified.recurse().getElementsByClass("Measure"))
 
     for i, measure in enumerate(measures):
@@ -279,7 +269,7 @@ def detect_cadences(score):
         if len(chords) < 2:
             continue
 
-        # Tonalidade local
+        # Local key
         try:
             k = measure.analyze("key")
         except:
@@ -295,15 +285,10 @@ def detect_cadences(score):
             except:
                 continue
 
-            # Offset global real
-            try:
-                q_time = c2.getOffsetBySite(chordified)
-            except:
-                q_time = c2.offset + measure.offset
-
+            q_time = c2.offset + measure.offset
             offset_seconds = quarter_to_seconds(score, q_time)
 
-            # Autêntica
+            # Authentic cadence
             if "V" in rn1.romanNumeral and rn2.romanNumeral == "I":
                 cadences.append({
                     "type": "authentic",
@@ -312,7 +297,7 @@ def detect_cadences(score):
                     "key": str(k)
                 })
 
-            # Meia cadência (termina em V)
+            # Half cadence
             if rn2.romanNumeral == "V":
                 cadences.append({
                     "type": "half",
@@ -324,110 +309,55 @@ def detect_cadences(score):
     return cadences
 
 
-
 # ================================================================
 #   SONATA SECTION ESTIMATOR
 # ================================================================
-# (mantido igual — apenas usando cadences corretas)
-
 
 def identify_sonata_sections(duration, key_areas, themes, cadences, global_key):
-
     expo_end = duration * 0.35
     dev_end = duration * 0.70
 
     if global_key:
         primary_key = global_key["key"]
-        primary_tonic = global_key.get("tonic", primary_key.split()[0])
         primary_mode = global_key.get("mode", "major")
     else:
         primary_key = key_areas[0]["key"]
-        primary_tonic = key_areas[0]["tonic"]
         primary_mode = key_areas[0]["mode"]
 
-    # Secondary key guess
-    if "major" in primary_mode:
-        secondary_key = "V (dominante)"
-    else:
-        secondary_key = "III (relativa maior)"
+    secondary_key = "V (dominante)" if "major" in primary_mode else "III (relativa maior)"
 
     sections = [
-        {
-            "type": "exposition-theme1",
-            "startTime": 0,
-            "endTime": expo_end * 0.40,
-            "confidence": 0.85,
-            "description": f"Primeiro tema em {primary_key}",
-            "musicalKey": primary_key,
-        },
-        {
-            "type": "exposition-transition",
-            "startTime": expo_end * 0.40,
-            "endTime": expo_end * 0.55,
-            "confidence": 0.75,
-            "description": f"Transição modulante para {secondary_key}",
-            "musicalKey": "modulando",
-        },
-        {
-            "type": "exposition-theme2",
-            "startTime": expo_end * 0.55,
-            "endTime": expo_end * 0.85,
-            "confidence": 0.80,
-            "description": f"Segundo tema na tonalidade de {secondary_key}",
-            "musicalKey": secondary_key,
-        },
-        {
-            "type": "exposition-closing",
-            "startTime": expo_end * 0.85,
-            "endTime": expo_end,
-            "confidence": 0.70,
-            "description": f"Encerramento da exposição",
-            "musicalKey": secondary_key,
-        },
-        {
-            "type": "development",
-            "startTime": expo_end,
-            "endTime": dev_end,
-            "confidence": 0.75,
-            "description": "Desenvolvimento com modulações e fragmentação temática",
-            "musicalKey": "instável",
-        },
-        {
-            "type": "recapitulation-theme1",
-            "startTime": dev_end,
-            "endTime": dev_end + (duration - dev_end) * 0.35,
-            "confidence": 0.80,
-            "description": f"Retorno do primeiro tema em {primary_key}",
-            "musicalKey": primary_key,
-        },
-        {
-            "type": "recapitulation-transition",
-            "startTime": dev_end + (duration - dev_end) * 0.35,
-            "endTime": dev_end + (duration - dev_end) * 0.45,
-            "confidence": 0.70,
-            "description": f"Transição modificada em {primary_key}",
-            "musicalKey": primary_key,
-        },
-        {
-            "type": "recapitulation-theme2",
-            "startTime": dev_end + (duration - dev_end) * 0.45,
-            "endTime": dev_end + (duration - dev_end) * 0.75,
-            "confidence": 0.80,
-            "description": f"Segundo tema agora na tônica ({primary_key})",
-            "musicalKey": primary_key,
-        },
-        {
-            "type": "coda",
-            "startTime": dev_end + (duration - dev_end) * 0.75,
-            "endTime": duration,
-            "confidence": 0.75,
-            "description": f"Coda em {primary_key}",
-            "musicalKey": primary_key,
-        },
+        {"type": "exposition-theme1", "startTime": 0, "endTime": expo_end * 0.40,
+         "confidence": 0.85, "description": f"Primeiro tema em {primary_key}", "musicalKey": primary_key},
+
+        {"type": "exposition-transition", "startTime": expo_end * 0.40, "endTime": expo_end * 0.55,
+         "confidence": 0.75, "description": f"Transição modulante para {secondary_key}", "musicalKey": "modulando"},
+
+        {"type": "exposition-theme2", "startTime": expo_end * 0.55, "endTime": expo_end * 0.85,
+         "confidence": 0.80, "description": f"Segundo tema na tonalidade de {secondary_key}", "musicalKey": secondary_key},
+
+        {"type": "exposition-closing", "startTime": expo_end * 0.85, "endTime": expo_end,
+         "confidence": 0.70, "description": "Encerramento da exposição", "musicalKey": secondary_key},
+
+        {"type": "development", "startTime": expo_end, "endTime": dev_end,
+         "confidence": 0.75, "description": "Desenvolvimento com modulações", "musicalKey": "instável"},
+
+        {"type": "recapitulation-theme1", "startTime": dev_end, "endTime": dev_end + (duration - dev_end) * 0.35,
+         "confidence": 0.80, "description": f"Retorno do primeiro tema em {primary_key}", "musicalKey": primary_key},
+
+        {"type": "recapitulation-transition", "startTime": dev_end + (duration - dev_end) * 0.35,
+         "endTime": dev_end + (duration - dev_end) * 0.45, "confidence": 0.70,
+         "description": "Transição modificada", "musicalKey": primary_key},
+
+        {"type": "recapitulation-theme2", "startTime": dev_end + (duration - dev_end) * 0.45,
+         "endTime": dev_end + (duration - dev_end) * 0.75, "confidence": 0.80,
+         "description": f"Segundo tema agora em {primary_key}", "musicalKey": primary_key},
+
+        {"type": "coda", "startTime": dev_end + (duration - dev_end) * 0.75, "endTime": duration,
+         "confidence": 0.75, "description": "Coda final", "musicalKey": primary_key}
     ]
 
     return sections
-
 
 
 # ================================================================
@@ -436,13 +366,12 @@ def identify_sonata_sections(duration, key_areas, themes, cadences, global_key):
 
 @app.api_route("/", methods=["GET", "HEAD"])
 async def root():
-    return {"status": "running", "service": "sonata-analyzer"}
+    return {"status": "running"}
 
 
 @app.get("/health")
 async def health():
-    return {"status": "running", "service": "sonata-analyzer"}
-
+    return {"status": "running"}
 
 
 @app.post("/analyze")
@@ -451,87 +380,55 @@ async def analyze_midi(midi_file: UploadFile = File(...)):
     if not midi_file.filename.lower().endswith((".mid", ".midi")):
         raise HTTPException(400, "File must be MIDI")
 
-    path = None
+    temp_path = None
+
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mid") as tmp:
             content = await midi_file.read()
             if not content:
                 raise HTTPException(400, "Empty file received")
             tmp.write(content)
-            path = tmp.name
+            temp_path = tmp.name
 
+        # Parse MIDI safely (IMPORTANT for Render)
         try:
-            score = converter.parse(path)
+            score = converter.parse(temp_path, format="midi")
         except Exception as e:
-            raise HTTPException(400, f"Failed to parse MIDI file: {str(e)}")
+            raise HTTPException(400, f"Failed to parse MIDI: {str(e)}")
 
-        if score is None:
-            raise HTTPException(400, "Could not parse MIDI file")
-
-        # Duration in seconds
         duration = get_true_duration_seconds(score)
-        if duration <= 0:
-            duration = 180.0
 
-        # Key analysis
         key_areas, global_key = analyze_key_areas(score, duration)
 
-        # Themes
         try:
             themes = detect_thematic_material(score)
         except:
             themes = []
 
-        # Cadences (now fixed)
         try:
             cadences = detect_cadences(score)
         except:
             cadences = []
 
-        # Sonata sections
         sections = identify_sonata_sections(duration, key_areas, themes, cadences, global_key)
 
-        # Overall confidence
-        overall = float(np.mean([s["confidence"] for s in sections])) if sections else 0.75
-
-        insights = [
-            f"Duração: {duration:.1f} segundos",
-        ]
-
-        if global_key:
-            insights.append(
-                f"Tonalidade principal: {global_key['key']} (confiança: {global_key['correlation']:.0%})"
-            )
-
-        insights.append(f"Cadências encontradas: {len(cadences)}")
+        overall = float(np.mean([s["confidence"] for s in sections]))
 
         return {
             "sections": sections,
             "overallConfidence": overall,
-            "summary": f"Análise de forma sonata: {len(sections)} seções identificadas em {duration:.1f} segundos.",
-            "musicalInsights": insights,
+            "summary": f"{len(sections)} sections identified.",
+            "musicalInsights": [
+                f"Duração: {duration:.2f} s",
+                f"Tonalidade: {global_key['key'] if global_key else 'desconhecida'}",
+                f"Cadências: {len(cadences)}"
+            ],
             "keyAnalysis": {
                 "globalKey": global_key,
                 "keyAreas": key_areas
             }
         }
 
-    except HTTPException:
-        raise
-
-    except Exception as e:
-        raise HTTPException(500, f"Analysis failed: {str(e)}")
-
     finally:
-        if path and os.path.exists(path):
-            os.unlink(path)
-
-
-
-# ================================================================
-#   LOCAL SERVER
-# ================================================================
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
