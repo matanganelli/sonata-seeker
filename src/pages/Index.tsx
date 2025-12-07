@@ -212,20 +212,20 @@ const Index = () => {
             ))}
           </motion.section>
         )}
-
-        {/* Footer with designer link */}
-        <footer className="fixed bottom-2 right-8 text-right">
-          <p className="text-xs text-yellow-400/70">Design for MA</p>
-          <a 
-            href="https://www.mariatanganelli.com" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors mt-2 block"
-          >
-            mariatanganelli.com
-          </a>
-        </footer>
       </div>
+
+      {/* Footer with designer link - outside container for true fixed positioning */}
+      <footer className="fixed bottom-4 right-8 text-right z-50">
+        <p className="text-xs text-yellow-400/70">Design for MA</p>
+        <a 
+          href="https://www.mariatanganelli.com" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors mt-2 block"
+        >
+          mariatanganelli.com
+        </a>
+      </footer>
     </div>
   );
 };
