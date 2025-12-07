@@ -31,6 +31,20 @@ serve(async (req) => {
     console.log(`Analyzing MIDI file: ${fileName}, size: ${midiData.length} bytes (base64)`);
     console.log(`Python backend URL: ${PYTHON_BACKEND_URL}`);
 
+    // Wake up the backend first (Render free tier cold start)
+    console.log('Waking up Python backend...');
+    try {
+      const wakeUpController = new AbortController();
+      const wakeUpTimeout = setTimeout(() => wakeUpController.abort(), 60000);
+      await fetch(`${PYTHON_BACKEND_URL}/health`, { 
+        signal: wakeUpController.signal 
+      });
+      clearTimeout(wakeUpTimeout);
+      console.log('Backend is awake');
+    } catch (wakeErr) {
+      console.log('Wake-up ping failed or timed out, proceeding anyway...');
+    }
+
     // Convert base64 to binary
     const binaryData = Uint8Array.from(atob(midiData), c => c.charCodeAt(0));
     const blob = new Blob([binaryData], { type: 'audio/midi' });
@@ -40,11 +54,11 @@ serve(async (req) => {
     const backendFormData = new FormData();
     backendFormData.append('midi_file', blob, fileName || 'file.mid');
 
-    console.log('Sending request to Python backend...');
+    console.log('Sending analysis request to Python backend...');
     
-    // Add timeout with AbortController (120 seconds for large files)
+    // Add timeout with AbortController (180 seconds to account for cold start + analysis)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000);
+    const timeoutId = setTimeout(() => controller.abort(), 180000);
 
     const response = await fetch(`${PYTHON_BACKEND_URL}/analyze`, {
       method: 'POST',
