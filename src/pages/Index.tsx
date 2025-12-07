@@ -220,7 +220,7 @@ const Index = () => {
             href="https://www.mariatanganelli.com" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors"
+            className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors mt-2 block"
           >
             mariatanganelli.com
           </a>
