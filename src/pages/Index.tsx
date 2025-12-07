@@ -117,17 +117,35 @@ const Index = () => {
         new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
       );
 
-      // Call the Edge Function
-      const { data, error: fnError } = await supabase.functions.invoke('analyze-sonata', {
-        body: {
-          midiData: base64,
-          fileName: currentFileRef.current.name,
-        },
-      });
+      // Call the Edge Function with extended timeout (5 minutes for cold start + analysis)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-sonata`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            midiData: base64,
+            fileName: currentFileRef.current.name,
+          }),
+          signal: controller.signal,
+        }
+      );
+      
+      clearTimeout(timeoutId);
 
-      if (fnError) {
-        throw new Error(fnError.message || 'Erro ao analisar arquivo');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Erro ${response.status}`);
       }
+
+      const data = await response.json();
 
       if (!data || !data.sections) {
         throw new Error('Resposta inválida do servidor');
