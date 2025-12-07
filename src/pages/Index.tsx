@@ -215,6 +215,18 @@ const Index = () => {
             ))}
           </motion.section>
         )}
+
+        {/* Footer with designer link */}
+        <footer className="fixed bottom-4 right-4">
+          <a 
+            href="https://www.mariatanganelli.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+          >
+            mariatanganelli.com
+          </a>
+        </footer>
       </div>
     </div>
   );
