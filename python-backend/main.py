@@ -19,7 +19,7 @@ import numpy as np
 # ================================================================
 music21.environment.set('musicxmlPath', None)
 music21.environment.set('musescoreDirectPNGPath', None)
-music21.environment.set('autoDownload', False)
+music21.environment.set('autoDownload', 'deny')
 music21.environment.set('printFormat', None)
 music21.environment.set('pdfPath', None)
 
