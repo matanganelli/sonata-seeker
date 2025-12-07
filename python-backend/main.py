@@ -434,7 +434,7 @@ def identify_sonata_sections(duration, key_areas, themes, cadences, global_key):
 #   API ROUTES
 # ================================================================
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     return {"status": "running", "service": "sonata-analyzer"}
 
