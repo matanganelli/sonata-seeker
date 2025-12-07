@@ -1,64 +1,97 @@
 🎼 Sonata Form Analyzer
-Automatic structural analysis of classical music using Music21 + FastAPI + React (Vite + TS + shadcn + Tailwind)
+A full-stack system for automatic structural analysis of classical sonata form using Music21 + FastAPI + React (Vite + TS + shadcn-ui + Tailwind)
 
-Este projeto é uma aplicação completa (frontend + backend) desenvolvida para analisar arquivos MIDI e identificar automaticamente a estrutura formal de uma sonata clássica — incluindo exposição, desenvolvimento, recapitulação, temas e cadências — usando técnicas de análise musical computacional.
+This project is a complete application (frontend + backend) designed to analyze MIDI files and automatically identify the structural components of Classical Sonata Form — including Exposition, Development, Recapitulation, cadences, tonal areas, and thematic blocks — using computational musicology techniques.
 
-O objetivo final é fornecer uma ferramenta moderna, visual e técnica para estudos de análise musical, musicologia computacional e aplicações educacionais.
+The system combines a modern React frontend with a Python/Music21 backend and is fully deployable on Google Cloud Run.
 
-🚀 Tecnologias Utilizadas
+Perfect for academic work, music analysis tools, and portfolio demonstration.
+
+🚀 Tech Stack
 Frontend
 
-⚡ Vite — build rápido e moderno
-🟦 TypeScript — tipagem robusta
-⚛️ React — interface reativa
-🎨 Tailwind CSS — design responsivo
-🧩 shadcn-ui — componentes acessíveis e elegantes
-🔌 Axios / Fetch — comunicação com API
+⚡ Vite — modern development tooling
+
+🟦 TypeScript — strong typing and safety
+
+⚛️ React — component-based UI
+
+🎨 Tailwind CSS — utility-first CSS
+
+🧩 shadcn-ui — accessible and elegant component library
+
+🔌 Fetch / Axios — API communication
 
 Backend
 
 🐍 Python 3.10+
-🎼 Music21 — análise musical (key, cadences, themes, offsets, durations)
-🚀 FastAPI — API moderna, tipada e rápida
-🔄 Uvicorn — servidor ASGI
-☁️ Render 
-🧠 Como o Analisador Funciona
 
-O backend recebe um arquivo .mid e executa:
+🎼 Music21 — symbolic music analysis (keys, cadences, themes, time maps)
 
-1. Extração temporal real (corrigida)
+🚀 FastAPI — high-performance REST API
 
-➡️ Usa score.secondsMap para evitar erros de minutagem.
-➡️ Converte todas as durações para segundos reais, não quarterLength.
+🔄 Uvicorn — ASGI server
+
+☁️ Google Cloud Run — serverless container hosting
+
+🧠 How the Analyzer Works
+
+The backend receives a .mid file and performs the following:
+
+1. Accurate Time Extraction (fixed: no more mismatched timings)
+
+Music21’s secondsMap is used to compute real temporal positions.
+✔ Avoids the common mistake of assuming quarterLength = seconds.
 
 2. Key Area Detection
 
-Analisa regiões tonais em janelas móveis de compassos.
-Retorna:
-tonalidade
-modo
-correlação
-início/fim em segundos
+The score is segmented into windowed measure blocks.
+Each block is analyzed for:
+
+key
+
+mode
+
+tonal stability
+
+start/end (in seconds)
 
 3. Thematic Material Detection
 
-Detecta padrões melódicos recorrentes avaliando:
-contorno
-densidade rítmica
-alcance melódico
+A sliding-window algorithm evaluates:
+
+melodic contour
+
+pitch intervals
+
+rhythmic density
+
+ascending / descending gestures
 
 4. Cadence Detection
 
-Identifica:
-Autênticas (V–I)
-Meias cadências (terminando em V)
-Baseado em RomanNumerals calculados com o Music21.
+Roman numeral analysis is applied to detect:
 
-5. Sonata Section Estimation
+Authentic cadences (V–I)
 
-Determina:
-Exposição
-Desenvolvimento
-Recapitulação
+Half cadences (ending on V)
+
+Offsets are converted to real timestamps.
+
+5. Sonata Form Section Estimation
+
+Heuristic modeling identifies:
+
+Exposition
+
+Transition
+
+Second Theme
+
+Development
+
+Recapitulation
+
 Coda
-Usa modelos heurísticos + análise tonal.
+
+Everything is mapped to seconds for precise UI display.
