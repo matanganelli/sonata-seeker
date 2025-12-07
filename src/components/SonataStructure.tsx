@@ -1,10 +1,9 @@
 import { motion } from 'framer-motion';
-import { Sparkles, Brain } from 'lucide-react';
 import type { SonataAnalysis, SonataSectionData } from '@/types/midi';
 import { cn } from '@/lib/utils';
 
 interface SonataStructureProps {
-  analysis: SonataAnalysis & { analysisType?: string };
+  analysis: SonataAnalysis;
   duration: number;
 }
 
@@ -70,15 +69,7 @@ export function SonataStructure({ analysis, duration }: SonataStructureProps) {
       {/* Main structure visualization */}
       <div className="bg-card/50 backdrop-blur-sm rounded-xl border border-border p-6">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <h3 className="text-xl font-heading font-semibold">Estrutura da Forma Sonata</h3>
-            {(analysis as any).analysisType === 'ai-enhanced' && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
-                <Brain className="w-3.5 h-3.5 text-primary" />
-                <span className="text-xs font-medium text-primary">Análise IA</span>
-              </div>
-            )}
-          </div>
+          <h3 className="text-xl font-heading font-semibold">Estrutura da Forma Sonata</h3>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Confiança:</span>
             <span className={cn(

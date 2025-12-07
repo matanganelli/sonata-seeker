@@ -5,170 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SONATA_ANALYSIS_PROMPT = `You are an expert musicologist specializing in Classical and Romantic period formal analysis, particularly sonata form. 
-
-Analyze the provided musical data and identify the sonata form structure. The data includes:
-- Key areas detected throughout the piece
-- Thematic material patterns
-- Cadence points
-- Total duration
-
-Based on this data, identify the following sections with precise timestamps:
-1. **Exposition** (usually first 30-40% of the piece)
-   - First Theme (P): In tonic key
-   - Transition (TR): Modulating passage
-   - Second Theme (S): In contrasting key (dominant or relative major)
-   - Closing Theme (C): Cadential material
-
-2. **Development** (usually middle 25-35%)
-   - Fragmentary treatment of themes
-   - Harmonic instability
-   - Sequential passages
-
-3. **Recapitulation** (usually final 30-40%)
-   - Return of First Theme in tonic
-   - Second Theme now in tonic key
-   - Possible Coda
-
-Consider these musical indicators:
-- Key changes suggest section boundaries
-- Cadence points (especially PAC/HC) mark phrase endings
-- Thematic character changes indicate new sections
-- Return to tonic key signals recapitulation
-
-Return your analysis as a JSON object with this exact structure:
-{
-  "sections": [
-    {
-      "type": "exposition-theme1" | "exposition-transition" | "exposition-theme2" | "exposition-closing" | "development" | "recapitulation-theme1" | "recapitulation-transition" | "recapitulation-theme2" | "recapitulation-closing" | "coda",
-      "startTime": <number in seconds>,
-      "endTime": <number in seconds>,
-      "confidence": <0.0 to 1.0>,
-      "description": "<brief description in Portuguese>",
-      "musicalKey": "<key if detected, e.g. 'C major', 'G minor'>"
-    }
-  ],
-  "overallConfidence": <0.0 to 1.0>,
-  "summary": "<2-3 sentence summary of the analysis in Portuguese>",
-  "musicalInsights": ["<insight 1 in Portuguese>", "<insight 2>", ...]
-}
-
-Important:
-- Ensure startTime and endTime are within the total duration
-- Sections should not overlap
-- Be conservative with confidence scores
-- Provide specific musical observations in the insights`;
-
-async function analyzeWithAI(pythonData: any): Promise<any> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  
-  if (!LOVABLE_API_KEY) {
-    console.log('LOVABLE_API_KEY not configured, using Python analysis only');
-    return pythonData;
-  }
-
-  // Extract data with safe defaults
-  const total_duration = pythonData.total_duration ?? pythonData.duration ?? 0;
-  const key_areas = pythonData.key_areas ?? [];
-  const thematic_material = pythonData.thematic_material ?? [];
-  const cadences = pythonData.cadences ?? [];
-  const sections = pythonData.sections ?? [];
-
-  console.log('Python data keys:', Object.keys(pythonData));
-  console.log('Total duration:', total_duration);
-
-  const formatTime = (t: any) => typeof t === 'number' ? t.toFixed(1) : '0.0';
-
-  const dataContext = `
-## Musical Data Extracted from MIDI
-
-### Total Duration: ${formatTime(total_duration)} seconds
-
-### Key Areas Detected:
-${key_areas.length > 0 ? key_areas.map((k: any) => `- ${k.key || 'Unknown'} ${k.mode || ''} (${formatTime(k.start_time)}s - ${formatTime(k.end_time)}s)`).join('\n') : 'No key areas detected'}
-
-### Thematic Material:
-${thematic_material.length > 0 ? thematic_material.map((t: any) => `- ${t.label || 'Theme'} at ${formatTime(t.start_time)}s - ${formatTime(t.end_time)}s (character: ${t.character || 'unknown'})`).join('\n') : 'No thematic material detected'}
-
-### Cadence Points:
-${cadences.length > 0 ? cadences.map((c: any) => `- ${c.type || 'Unknown'} cadence at ${formatTime(c.time_seconds)}s`).join('\n') : 'No cadences detected'}
-
-### Heuristic Sections (from basic analysis):
-${sections.length > 0 ? sections.map((s: any) => `- ${s.type}: ${formatTime(s.startTime)}s - ${formatTime(s.endTime)}s`).join('\n') : 'No sections detected'}
-
-Please analyze this data and provide a detailed sonata form structure analysis.`;
-
-  try {
-    console.log('Calling Lovable AI for analysis...');
-    
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: SONATA_ANALYSIS_PROMPT },
-          { role: 'user', content: dataContext }
-        ],
-        temperature: 0.3,
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        console.warn('AI rate limited, falling back to Python analysis');
-        return pythonData;
-      }
-      if (response.status === 402) {
-        console.warn('AI credits exhausted, falling back to Python analysis');
-        return pythonData;
-      }
-      const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
-      return pythonData;
-    }
-
-    const aiResponse = await response.json();
-    const content = aiResponse.choices?.[0]?.message?.content;
-    
-    if (!content) {
-      console.warn('Empty AI response, falling back to Python analysis');
-      return pythonData;
-    }
-
-    // Extract JSON from response (might be wrapped in markdown code blocks)
-    let jsonStr = content;
-    const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      jsonStr = jsonMatch[1].trim();
-    }
-
-    const aiAnalysis = JSON.parse(jsonStr);
-    console.log('AI analysis successful');
-    
-    // Merge AI analysis with Python data
-    return {
-      ...aiAnalysis,
-      rawData: {
-        key_areas,
-        thematic_material,
-        cadences,
-        total_duration,
-      },
-      analysisType: 'ai-enhanced'
-    };
-
-  } catch (error) {
-    console.error('AI analysis error:', error);
-    // Fall back to Python analysis
-    return pythonData;
-  }
-}
-
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -180,6 +18,7 @@ serve(async (req) => {
       throw new Error('PYTHON_BACKEND_URL is not configured');
     }
 
+    // Parse JSON body with base64 MIDI data
     const { midiData, fileName } = await req.json();
 
     if (!midiData) {
@@ -195,7 +34,7 @@ serve(async (req) => {
     const binaryData = Uint8Array.from(atob(midiData), c => c.charCodeAt(0));
     const blob = new Blob([binaryData], { type: 'audio/midi' });
 
-    // Forward the file to the Python backend
+    // Forward the file to the Python backend as FormData
     const backendFormData = new FormData();
     backendFormData.append('midi_file', blob, fileName || 'file.mid');
 
@@ -213,14 +52,11 @@ serve(async (req) => {
       );
     }
 
-    const pythonResult = await response.json();
-    console.log('Python analysis completed, enhancing with AI...');
-
-    // Enhance with AI analysis
-    const enhancedAnalysis = await analyzeWithAI(pythonResult);
+    const analysisResult = await response.json();
+    console.log('Analysis completed successfully');
 
     return new Response(
-      JSON.stringify(enhancedAnalysis),
+      JSON.stringify(analysisResult),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
