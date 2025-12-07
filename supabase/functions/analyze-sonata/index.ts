@@ -67,24 +67,34 @@ async function analyzeWithAI(pythonData: any): Promise<any> {
     return pythonData;
   }
 
-  const { total_duration, key_areas, thematic_material, cadences, sections } = pythonData;
+  // Extract data with safe defaults
+  const total_duration = pythonData.total_duration ?? pythonData.duration ?? 0;
+  const key_areas = pythonData.key_areas ?? [];
+  const thematic_material = pythonData.thematic_material ?? [];
+  const cadences = pythonData.cadences ?? [];
+  const sections = pythonData.sections ?? [];
+
+  console.log('Python data keys:', Object.keys(pythonData));
+  console.log('Total duration:', total_duration);
+
+  const formatTime = (t: any) => typeof t === 'number' ? t.toFixed(1) : '0.0';
 
   const dataContext = `
 ## Musical Data Extracted from MIDI
 
-### Total Duration: ${total_duration.toFixed(2)} seconds
+### Total Duration: ${formatTime(total_duration)} seconds
 
 ### Key Areas Detected:
-${key_areas?.map((k: any) => `- ${k.key} ${k.mode} (${k.start_time.toFixed(1)}s - ${k.end_time.toFixed(1)}s)`).join('\n') || 'No key areas detected'}
+${key_areas.length > 0 ? key_areas.map((k: any) => `- ${k.key || 'Unknown'} ${k.mode || ''} (${formatTime(k.start_time)}s - ${formatTime(k.end_time)}s)`).join('\n') : 'No key areas detected'}
 
 ### Thematic Material:
-${thematic_material?.map((t: any) => `- ${t.label} at ${t.start_time.toFixed(1)}s - ${t.end_time.toFixed(1)}s (character: ${t.character})`).join('\n') || 'No thematic material detected'}
+${thematic_material.length > 0 ? thematic_material.map((t: any) => `- ${t.label || 'Theme'} at ${formatTime(t.start_time)}s - ${formatTime(t.end_time)}s (character: ${t.character || 'unknown'})`).join('\n') : 'No thematic material detected'}
 
 ### Cadence Points:
-${cadences?.map((c: any) => `- ${c.type} cadence at ${c.time_seconds.toFixed(1)}s`).join('\n') || 'No cadences detected'}
+${cadences.length > 0 ? cadences.map((c: any) => `- ${c.type || 'Unknown'} cadence at ${formatTime(c.time_seconds)}s`).join('\n') : 'No cadences detected'}
 
 ### Heuristic Sections (from basic analysis):
-${sections?.map((s: any) => `- ${s.type}: ${s.startTime.toFixed(1)}s - ${s.endTime.toFixed(1)}s`).join('\n') || 'No sections detected'}
+${sections.length > 0 ? sections.map((s: any) => `- ${s.type}: ${formatTime(s.startTime)}s - ${formatTime(s.endTime)}s`).join('\n') : 'No sections detected'}
 
 Please analyze this data and provide a detailed sonata form structure analysis.`;
 
