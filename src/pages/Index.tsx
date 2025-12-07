@@ -59,9 +59,14 @@ const Index = () => {
       });
     } catch (err) {
       console.error('Analysis error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+      const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('504');
+      
       toast({
-        title: "Erro na análise",
-        description: err instanceof Error ? err.message : 'Erro desconhecido ao analisar o arquivo',
+        title: isTimeout ? "Servidor ocupado" : "Erro na análise",
+        description: isTimeout 
+          ? "O servidor está iniciando. Por favor, tente novamente em alguns segundos."
+          : errorMessage,
         variant: "destructive",
       });
     } finally {
