@@ -181,18 +181,13 @@ const Index = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16"
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-16 max-w-2xl mx-auto"
           >
             {[
               {
                 icon: Music2,
                 title: 'Análise MIDI',
                 description: 'Processa arquivos MIDI e extrai informações musicais detalhadas',
-              },
-              {
-                icon: Sparkles,
-                title: 'IA Avançada',
-                description: 'Identifica automaticamente seções da forma sonata com alta precisão',
               },
               {
                 icon: Wand2,
