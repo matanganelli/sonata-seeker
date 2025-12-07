@@ -221,7 +221,7 @@ const Index = () => {
           href="https://www.mariatanganelli.com" 
           target="_blank" 
           rel="noopener noreferrer"
-          className="text-xs text-yellow-400 hover:text-yellow-300 hover:underline transition-colors mt-2 block cursor-pointer"
+          className="text-xs text-yellow-400 hover:text-yellow-300 hover:underline transition-colors mt-2 block cursor-pointer bg-transparent"
         >
           mariatanganelli.com
         </a>
