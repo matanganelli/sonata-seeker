@@ -9,29 +9,19 @@ O objetivo final é fornecer uma ferramenta moderna, visual e técnica para estu
 Frontend
 
 ⚡ Vite — build rápido e moderno
-
 🟦 TypeScript — tipagem robusta
-
 ⚛️ React — interface reativa
-
 🎨 Tailwind CSS — design responsivo
-
 🧩 shadcn-ui — componentes acessíveis e elegantes
-
 🔌 Axios / Fetch — comunicação com API
 
 Backend
 
 🐍 Python 3.10+
-
 🎼 Music21 — análise musical (key, cadences, themes, offsets, durations)
-
 🚀 FastAPI — API moderna, tipada e rápida
-
 🔄 Uvicorn — servidor ASGI
-
-☁️ Google Cloud Run — deploy serverless (opcional)
-
+☁️ Render 
 🧠 Como o Analisador Funciona
 
 O backend recebe um arquivo .mid e executa:
@@ -45,44 +35,30 @@ O backend recebe um arquivo .mid e executa:
 
 Analisa regiões tonais em janelas móveis de compassos.
 Retorna:
-
 tonalidade
-
 modo
-
 correlação
-
 início/fim em segundos
 
 3. Thematic Material Detection
 
 Detecta padrões melódicos recorrentes avaliando:
-
 contorno
-
 densidade rítmica
-
 alcance melódico
 
 4. Cadence Detection
 
 Identifica:
-
 Autênticas (V–I)
-
 Meias cadências (terminando em V)
 Baseado em RomanNumerals calculados com o Music21.
 
 5. Sonata Section Estimation
 
 Determina:
-
 Exposição
-
 Desenvolvimento
-
 Recapitulação
-
 Coda
-
 Usa modelos heurísticos + análise tonal.
