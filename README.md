@@ -23,6 +23,7 @@ Frontend
 🔌 Fetch / Axios — API communication
 
 Backend
+The backend performs a multi-stage symbolic music analysis pipeline using Music21 to extract structural elements commonly associated with classical Sonata Form.
 
 🐍 Python 3.10+
 
@@ -32,7 +33,7 @@ Backend
 
 🔄 Uvicorn — ASGI server
 
-☁️ Google Cloud Run — serverless container hosting
+☁️ Render 
 
 🧠 How the Analyzer Works
 
