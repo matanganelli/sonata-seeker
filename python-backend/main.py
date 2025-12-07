@@ -39,25 +39,68 @@ def get_seconds_map(score):
 
 
 def get_true_duration_seconds(score):
-    """Return actual duration of MIDI in SECONDS using secondsMap."""
-    sm = get_seconds_map(score)
-
-    if not sm:
-        # fallback: assume 120 bpm
-        bpm = score.recurse().getElementsByClass(tempo.MetronomeMark)
-        bpm = bpm[0].number if bpm else 120
-        return float(score.duration.quarterLength) * (60 / bpm)
-
-    end_times = []
-    for event in sm:
-        off = event.get("offsetSeconds", 0)
-        dur = event.get("durationSeconds")
-        if dur is not None:
-            end_times.append(off + dur)
-        else:
-            end_times.append(event.get("endTime", off))
-
-    return max(end_times)
+    """Return actual duration of MIDI in SECONDS."""
+    
+    # Method 1: Try to get highest time from the score
+    try:
+        highest_time = score.highestTime  # in quarter lengths
+        if highest_time and highest_time > 0:
+            # Get tempo
+            marks = list(score.recurse().getElementsByClass(tempo.MetronomeMark))
+            bpm = marks[0].number if marks else 120
+            duration = float(highest_time) * (60.0 / bpm)
+            if duration > 0:
+                print(f"Duration from highestTime: {duration:.1f}s (ql={highest_time}, bpm={bpm})")
+                return duration
+    except Exception as e:
+        print(f"highestTime method failed: {e}")
+    
+    # Method 2: Try secondsMap
+    try:
+        sm = get_seconds_map(score)
+        if sm:
+            end_times = []
+            for event in sm:
+                off = event.get("offsetSeconds", 0) or 0
+                dur = event.get("durationSeconds") or 0
+                end_times.append(off + dur)
+            if end_times:
+                duration = max(end_times)
+                if duration > 0:
+                    print(f"Duration from secondsMap: {duration:.1f}s")
+                    return duration
+    except Exception as e:
+        print(f"secondsMap method failed: {e}")
+    
+    # Method 3: Get last note offset + duration
+    try:
+        all_notes = list(score.recurse().notes)
+        if all_notes:
+            last_note = max(all_notes, key=lambda n: n.offset + n.duration.quarterLength)
+            last_ql = last_note.offset + last_note.duration.quarterLength
+            marks = list(score.recurse().getElementsByClass(tempo.MetronomeMark))
+            bpm = marks[0].number if marks else 120
+            duration = float(last_ql) * (60.0 / bpm)
+            if duration > 0:
+                print(f"Duration from last note: {duration:.1f}s")
+                return duration
+    except Exception as e:
+        print(f"Last note method failed: {e}")
+    
+    # Method 4: Use score.duration
+    try:
+        marks = list(score.recurse().getElementsByClass(tempo.MetronomeMark))
+        bpm = marks[0].number if marks else 120
+        duration = float(score.duration.quarterLength) * (60.0 / bpm)
+        if duration > 0:
+            print(f"Duration from score.duration: {duration:.1f}s")
+            return duration
+    except Exception as e:
+        print(f"score.duration method failed: {e}")
+    
+    # Fallback
+    print("All duration methods failed, using fallback 180s")
+    return 180.0
 
 
 def quarter_to_seconds(score, q):
