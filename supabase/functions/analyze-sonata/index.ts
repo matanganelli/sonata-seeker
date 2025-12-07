@@ -18,21 +18,25 @@ serve(async (req) => {
       throw new Error('PYTHON_BACKEND_URL is not configured');
     }
 
-    const formData = await req.formData();
-    const midiFile = formData.get('midi_file');
+    // Parse JSON body with base64 MIDI data
+    const { midiData, fileName } = await req.json();
 
-    if (!midiFile || !(midiFile instanceof File)) {
+    if (!midiData) {
       return new Response(
-        JSON.stringify({ error: 'No MIDI file provided' }),
+        JSON.stringify({ error: 'No MIDI data provided' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Analyzing MIDI file: ${midiFile.name}, size: ${midiFile.size} bytes`);
+    console.log(`Analyzing MIDI file: ${fileName}`);
 
-    // Forward the file to the Python backend
+    // Convert base64 to binary
+    const binaryData = Uint8Array.from(atob(midiData), c => c.charCodeAt(0));
+    const blob = new Blob([binaryData], { type: 'audio/midi' });
+
+    // Forward the file to the Python backend as FormData
     const backendFormData = new FormData();
-    backendFormData.append('midi_file', midiFile);
+    backendFormData.append('midi_file', blob, fileName || 'file.mid');
 
     const response = await fetch(`${PYTHON_BACKEND_URL}/analyze`, {
       method: 'POST',
