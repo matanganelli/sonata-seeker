@@ -8,7 +8,89 @@ import { useMidiParser } from '@/hooks/useMidiParser';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import type { SonataAnalysis } from '@/types/midi';
+import type { SonataAnalysis, SonataSectionData } from '@/types/midi';
+
+// Generate mock analysis data based on MIDI duration
+const generateMockAnalysis = (duration: number): SonataAnalysis => {
+  const sections: SonataSectionData[] = [
+    {
+      type: 'exposition-theme1',
+      startTime: 0,
+      endTime: duration * 0.12,
+      confidence: 0.85,
+      description: 'Primeiro tema principal em tonalidade tônica',
+      musicalKey: 'C Major',
+    },
+    {
+      type: 'exposition-transition',
+      startTime: duration * 0.12,
+      endTime: duration * 0.20,
+      confidence: 0.78,
+      description: 'Transição modulante para a dominante',
+      musicalKey: 'G Major',
+    },
+    {
+      type: 'exposition-theme2',
+      startTime: duration * 0.20,
+      endTime: duration * 0.32,
+      confidence: 0.82,
+      description: 'Segundo tema contrastante na dominante',
+      musicalKey: 'G Major',
+    },
+    {
+      type: 'exposition-closing',
+      startTime: duration * 0.32,
+      endTime: duration * 0.40,
+      confidence: 0.75,
+      description: 'Grupo de encerramento da exposição',
+      musicalKey: 'G Major',
+    },
+    {
+      type: 'development',
+      startTime: duration * 0.40,
+      endTime: duration * 0.60,
+      confidence: 0.88,
+      description: 'Desenvolvimento temático com modulações',
+      musicalKey: 'Various',
+    },
+    {
+      type: 'recapitulation-theme1',
+      startTime: duration * 0.60,
+      endTime: duration * 0.72,
+      confidence: 0.90,
+      description: 'Retorno do primeiro tema na tônica',
+      musicalKey: 'C Major',
+    },
+    {
+      type: 'recapitulation-theme2',
+      startTime: duration * 0.72,
+      endTime: duration * 0.85,
+      confidence: 0.84,
+      description: 'Segundo tema agora na tônica',
+      musicalKey: 'C Major',
+    },
+    {
+      type: 'coda',
+      startTime: duration * 0.85,
+      endTime: duration,
+      confidence: 0.80,
+      description: 'Coda conclusiva',
+      musicalKey: 'C Major',
+    },
+  ];
+
+  return {
+    sections,
+    overallConfidence: 0.83,
+    summary: 'Estrutura de forma sonata clássica identificada com exposição, desenvolvimento e recapitulação.',
+    musicalInsights: [
+      'Forma sonata típica do período clássico',
+      'Relação tônica-dominante na exposição',
+      'Desenvolvimento com fragmentação temática',
+      'Recapitulação mantém ambos os temas na tônica',
+    ],
+  };
+};
 
 const Index = () => {
   const { midiData, isLoading: isParsing, error, parseMidi } = useMidiParser();
@@ -60,15 +142,24 @@ const Index = () => {
     } catch (err) {
       console.error('Analysis error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
-      const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('504');
+      const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('504') || errorMessage.includes('non-2xx');
       
-      toast({
-        title: isTimeout ? "Servidor ocupado" : "Erro na análise",
-        description: isTimeout 
-          ? "O servidor está iniciando. Por favor, tente novamente em alguns segundos."
-          : errorMessage,
-        variant: "destructive",
-      });
+      if (isTimeout && midiData) {
+        // Use mock data when backend is unavailable
+        const mockAnalysis = generateMockAnalysis(midiData.duration);
+        setAnalysis(mockAnalysis);
+        
+        toast({
+          title: "Usando análise de demonstração",
+          description: "O servidor está offline. Exibindo dados de exemplo para visualização.",
+        });
+      } else {
+        toast({
+          title: "Erro na análise",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsAnalyzing(false);
     }
