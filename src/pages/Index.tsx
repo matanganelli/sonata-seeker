@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Music2, Sparkles, Wand2 } from 'lucide-react';
 import { MidiUploader } from '@/components/MidiUploader';
@@ -7,116 +7,66 @@ import { SonataStructure } from '@/components/SonataStructure';
 import { useMidiParser } from '@/hooks/useMidiParser';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import type { SonataAnalysis } from '@/types/midi';
-
-// Mock analysis for demo (will be replaced with AI)
-function generateMockAnalysis(duration: number): SonataAnalysis {
-  const expositionEnd = duration * 0.35;
-  const developmentEnd = duration * 0.65;
-  const recapEnd = duration * 0.92;
-
-  return {
-    sections: [
-      {
-        type: 'exposition-theme1',
-        startTime: 0,
-        endTime: expositionEnd * 0.3,
-        confidence: 0.85,
-        description: 'Primeiro tema na tonalidade principal, apresentando o material temático primário.',
-        musicalKey: 'Dó Maior',
-      },
-      {
-        type: 'exposition-transition',
-        startTime: expositionEnd * 0.3,
-        endTime: expositionEnd * 0.5,
-        confidence: 0.75,
-        description: 'Passagem modulatória conectando os dois temas principais.',
-      },
-      {
-        type: 'exposition-theme2',
-        startTime: expositionEnd * 0.5,
-        endTime: expositionEnd * 0.85,
-        confidence: 0.82,
-        description: 'Segundo tema contrastante, tipicamente na dominante.',
-        musicalKey: 'Sol Maior',
-      },
-      {
-        type: 'exposition-closing',
-        startTime: expositionEnd * 0.85,
-        endTime: expositionEnd,
-        confidence: 0.78,
-        description: 'Material de fechamento confirmando a nova tonalidade.',
-      },
-      {
-        type: 'development',
-        startTime: expositionEnd,
-        endTime: developmentEnd,
-        confidence: 0.88,
-        description: 'Elaboração e transformação dos temas, com modulações extensivas.',
-      },
-      {
-        type: 'recapitulation-theme1',
-        startTime: developmentEnd,
-        endTime: developmentEnd + (recapEnd - developmentEnd) * 0.35,
-        confidence: 0.9,
-        description: 'Retorno do primeiro tema na tonalidade original.',
-        musicalKey: 'Dó Maior',
-      },
-      {
-        type: 'recapitulation-theme2',
-        startTime: developmentEnd + (recapEnd - developmentEnd) * 0.45,
-        endTime: recapEnd,
-        confidence: 0.85,
-        description: 'Segundo tema agora na tonalidade principal.',
-        musicalKey: 'Dó Maior',
-      },
-      {
-        type: 'coda',
-        startTime: recapEnd,
-        endTime: duration,
-        confidence: 0.8,
-        description: 'Conclusão final reafirmando a tonalidade principal.',
-      },
-    ],
-    overallConfidence: 0.84,
-    summary: 'Esta peça apresenta uma estrutura de forma sonata clássica bem definida, com clara distinção entre exposição, desenvolvimento e recapitulação. O desenvolvimento mostra elaboração temática sofisticada.',
-    musicalInsights: [
-      'Modulação clara para a dominante no segundo tema da exposição',
-      'Desenvolvimento apresenta fragmentação temática característica',
-      'Recapitulação mantém ambos os temas na tonalidade principal',
-      'Coda conclusiva com reforço cadencial',
-    ],
-  };
-}
 
 const Index = () => {
   const { midiData, isLoading: isParsing, error, parseMidi } = useMidiParser();
   const [analysis, setAnalysis] = useState<SonataAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { toast } = useToast();
+  const currentFileRef = useRef<File | null>(null);
 
   const handleFileUpload = async (file: File) => {
     setAnalysis(null);
+    currentFileRef.current = file;
     await parseMidi(file);
   };
 
   const handleAnalyze = async () => {
-    if (!midiData) return;
+    if (!midiData || !currentFileRef.current) return;
 
     setIsAnalyzing(true);
-    
-    // Simulate AI analysis delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // TODO: Replace with actual AI analysis via Lovable Cloud
-    const mockAnalysis = generateMockAnalysis(midiData.duration);
-    setAnalysis(mockAnalysis);
-    setIsAnalyzing(false);
 
-    toast({
-      title: "Análise concluída",
-      description: `Forma sonata identificada com ${Math.round(mockAnalysis.overallConfidence * 100)}% de confiança.`,
-    });
+    try {
+      // Convert file to base64
+      const arrayBuffer = await currentFileRef.current.arrayBuffer();
+      const base64 = btoa(
+        new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
+
+      // Call the Edge Function
+      const { data, error: fnError } = await supabase.functions.invoke('analyze-sonata', {
+        body: {
+          midiData: base64,
+          fileName: currentFileRef.current.name,
+        },
+      });
+
+      if (fnError) {
+        throw new Error(fnError.message || 'Erro ao analisar arquivo');
+      }
+
+      if (!data || !data.sections) {
+        throw new Error('Resposta inválida do servidor');
+      }
+
+      setAnalysis(data as SonataAnalysis);
+
+      toast({
+        title: "Análise concluída",
+        description: `Forma sonata identificada com ${Math.round(data.overallConfidence * 100)}% de confiança.`,
+      });
+    } catch (err) {
+      console.error('Analysis error:', err);
+      toast({
+        title: "Erro na análise",
+        description: err instanceof Error ? err.message : 'Erro desconhecido ao analisar o arquivo',
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (
