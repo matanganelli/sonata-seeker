@@ -1,4 +1,7 @@
 🎼 Sonata Form Analyzer
+
+Design for MA
+
 A full-stack system for automatic structural analysis of classical sonata form using Music21 + FastAPI + React (Vite + TS + shadcn-ui + Tailwind)
 
 This project is a complete application (frontend + backend) designed to analyze MIDI files and automatically identify the structural components of Classical Sonata Form — including Exposition, Development, Recapitulation, cadences, tonal areas, and thematic blocks — using computational musicology techniques.
