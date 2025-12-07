@@ -107,6 +107,15 @@ def analyze_key_areas(score):
     return key_areas
 
 
+def get_pitch_midi(n):
+    """Get MIDI pitch from Note or Chord (uses highest pitch for chords)."""
+    if hasattr(n, 'pitch'):
+        return n.pitch.midi
+    elif hasattr(n, 'pitches') and n.pitches:
+        return max(p.midi for p in n.pitches)
+    return 60  # fallback to middle C
+
+
 def detect_thematic_material(score):
     themes = []
 
@@ -125,7 +134,7 @@ def detect_thematic_material(score):
     for i in range(0, len(notes) - window, step):
         section = notes[i:i + window]
 
-        pitches = [n.pitch.midi for n in section]
+        pitches = [get_pitch_midi(n) for n in section]
         contour = np.diff(pitches)
         durations = [n.duration.quarterLength for n in section]
         avg_dur = np.mean(durations)
