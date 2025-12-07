@@ -93,6 +93,10 @@ const Index = () => {
             <Music2 className="w-10 h-10 text-primary" />
           </motion.div>
           
+          <p className="text-sm text-muted-foreground/60 tracking-widest uppercase mb-2">
+            Design for MA
+          </p>
+          
           <h1 className="text-5xl md:text-6xl font-heading font-bold mb-4">
             <span className="text-gradient">Sonata</span> Analyzer
           </h1>
