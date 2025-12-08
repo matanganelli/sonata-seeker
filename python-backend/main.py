@@ -479,3 +479,13 @@ async def analyze_midi(midi_file: UploadFile = File(...)):
     finally:
         if temp_path and os.path.exists(temp_path):
             os.unlink(temp_path)
+
+
+# ================================================================
+#   START SERVER
+# ================================================================
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run(app, host="0.0.0.0", port=port)
