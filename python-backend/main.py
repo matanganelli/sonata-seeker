@@ -15,13 +15,9 @@ import numpy as np
 
 
 # ================================================================
-#   FIX: Disable MusicXML, MuseScore & external dependencies
+#   FIX: Disable external dependencies for cloud environment
 # ================================================================
-music21.environment.set('musicxmlPath', None)
-music21.environment.set('musescoreDirectPNGPath', None)
 music21.environment.set('autoDownload', 'deny')
-music21.environment.set('printFormat', None)
-music21.environment.set('pdfPath', None)
 
 
 app = FastAPI(title="Sonata Form Analyzer")
