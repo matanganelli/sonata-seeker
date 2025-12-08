@@ -316,18 +316,26 @@ def identify_sonata_sections(duration, key_areas, themes, cadences, global_key):
     dev_end = duration * 0.70
 
     if global_key:
-        primary_key = global_key["key"]
+        primary_key_full = global_key["key"]
         primary_mode = global_key.get("mode", "major")
     else:
-        primary_key = key_areas[0]["key"]
+        primary_key_full = key_areas[0]["key"]
         primary_mode = key_areas[0]["mode"]
 
-    if primary_mode == "major":
-        tonic = m21key.Key(primary_key).dominant
-        secondary_key = f"{tonic.name} major"
-    else:
-        tonic = m21key.Key(primary_key).relative
-        secondary_key = f"{tonic.name} major"
+    # Extract just the tonic note (e.g., "C" from "C major")
+    primary_tonic = primary_key_full.split()[0] if ' ' in primary_key_full else primary_key_full
+    primary_key = primary_key_full  # Keep full name for display
+
+    try:
+        if primary_mode == "major":
+            key_obj = m21key.Key(primary_tonic, 'major')
+            secondary_key = f"{key_obj.dominant.name} major"
+        else:
+            key_obj = m21key.Key(primary_tonic, 'minor')
+            secondary_key = f"{key_obj.relative.tonic.name} major"
+    except Exception as e:
+        print(f"Error determining secondary key: {e}")
+        secondary_key = "V"  # Fallback
 
     sections = [
         {
