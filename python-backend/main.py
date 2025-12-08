@@ -345,10 +345,14 @@ def identify_sonata_sections(duration, key_areas, themes, cadences, global_key):
     try:
         if primary_mode == "major":
             key_obj = m21key.Key(primary_tonic, 'major')
-            secondary_key = f"{format_accidentals(key_obj.dominant.name)} major"
+            # Get dominant (5th scale degree) using pitchFromDegree
+            dominant_pitch = key_obj.pitchFromDegree(5)
+            secondary_key = f"{format_accidentals(dominant_pitch.name)} major"
         else:
             key_obj = m21key.Key(primary_tonic, 'minor')
-            secondary_key = f"{format_accidentals(key_obj.relative.tonic.name)} major"
+            # Get relative major for minor keys
+            relative_key = key_obj.relative
+            secondary_key = f"{format_accidentals(relative_key.tonic.name)} major"
     except Exception as e:
         print(f"Error determining secondary key: {e}")
         secondary_key = "V"  # Fallback
