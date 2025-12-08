@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Music2, Sparkles, Wand2 } from 'lucide-react';
+import { Music2, Sparkles, Wand2, Brain } from 'lucide-react';
 import { MidiUploader } from '@/components/MidiUploader';
 import { PianoRoll } from '@/components/PianoRoll';
 import { SonataStructure } from '@/components/SonataStructure';
@@ -251,11 +251,15 @@ const Index = () => {
         opacity: 1
       }} transition={{
         delay: 0.4
-      }} className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-16 max-w-2xl mx-auto">
+      }} className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 max-w-4xl mx-auto">
             {[{
           icon: Music2,
           title: 'Análise MIDI',
           description: 'Processa arquivos MIDI e extrai informações musicais detalhadas'
+        }, {
+          icon: Brain,
+          title: 'Insights com IA',
+          description: 'Gera análises contextuais e históricas usando inteligência artificial'
         }, {
           icon: Wand2,
           title: 'Visualização',
