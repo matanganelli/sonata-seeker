@@ -310,6 +310,8 @@ def detect_cadences(score):
 # ================================================================
 
 def identify_sonata_sections(duration, key_areas, themes, cadences, global_key):
+    from music21 import key as m21key
+
     expo_end = duration * 0.35
     dev_end = duration * 0.70
 
@@ -320,45 +322,86 @@ def identify_sonata_sections(duration, key_areas, themes, cadences, global_key):
         primary_key = key_areas[0]["key"]
         primary_mode = key_areas[0]["mode"]
 
-    from music21 import key
-
     if primary_mode == "major":
-        tonic = key.Key(primary_key).dominant
+        tonic = m21key.Key(primary_key).dominant
         secondary_key = f"{tonic.name} major"
     else:
-        tonic = key.Key(primary_key).relative
+        tonic = m21key.Key(primary_key).relative
         secondary_key = f"{tonic.name} major"
 
     sections = [
-        
-        {"type": "exposition-theme1", "startTime": 0, "endTime": expo_end * 0.40,
-         "confidence": 0.85, "description": f"Primeiro tema em {primary_key}", "musicalKey": primary_key},
-
-        {"type": "exposition-transition", "startTime": expo_end * 0.40, "endTime": expo_end * 0.55,
-         "confidence": 0.75, "description": f"Transição modulante para {secondary_key}", "musicalKey": "modulando"},
-
-        {"type": "exposition-theme2", "startTime": expo_end * 0.55, "endTime": expo_end * 0.85,
-         "confidence": 0.80, "description": f"Segundo tema na tonalidade de {secondary_key}", "musicalKey": secondary_key},
-
-        {"type": "exposition-closing", "startTime": expo_end * 0.85, "endTime": expo_end,
-         "confidence": 0.70, "description": "Encerramento da exposição", "musicalKey": secondary_key},
-
-        {"type": "development", "startTime": expo_end, "endTime": dev_end,
-         "confidence": 0.75, "description": "Desenvolvimento com modulações", "musicalKey": "instável"},
-
-        {"type": "recapitulation-theme1", "startTime": dev_end, "endTime": dev_end + (duration - dev_end) * 0.35,
-         "confidence": 0.80, "description": f"Retorno do primeiro tema em {primary_key}", "musicalKey": primary_key},
-
-        {"type": "recapitulation-transition", "startTime": dev_end + (duration - dev_end) * 0.35,
-         "endTime": dev_end + (duration - dev_end) * 0.45, "confidence": 0.70,
-         "description": "Transição modificada", "musicalKey": primary_key},
-
-        {"type": "recapitulation-theme2", "startTime": dev_end + (duration - dev_end) * 0.45,
-         "endTime": dev_end + (duration - dev_end) * 0.75, "confidence": 0.80,
-         "description": f"Segundo tema agora em {primary_key}", "musicalKey": primary_key},
-
-        {"type": "coda", "startTime": dev_end + (duration - dev_end) * 0.75, "endTime": duration,
-         "confidence": 0.75, "description": "Coda final", "musicalKey": primary_key}
+        {
+            "type": "exposition-theme1",
+            "startTime": 0,
+            "endTime": expo_end * 0.40,
+            "confidence": 0.85,
+            "description": f"Primeiro tema em {primary_key}",
+            "musicalKey": primary_key
+        },
+        {
+            "type": "exposition-transition",
+            "startTime": expo_end * 0.40,
+            "endTime": expo_end * 0.55,
+            "confidence": 0.75,
+            "description": f"Transição modulante para {secondary_key}",
+            "musicalKey": "modulando"
+        },
+        {
+            "type": "exposition-theme2",
+            "startTime": expo_end * 0.55,
+            "endTime": expo_end * 0.85,
+            "confidence": 0.80,
+            "description": f"Segundo tema na tonalidade de {secondary_key}",
+            "musicalKey": secondary_key
+        },
+        {
+            "type": "exposition-closing",
+            "startTime": expo_end * 0.85,
+            "endTime": expo_end,
+            "confidence": 0.70,
+            "description": "Encerramento da exposição",
+            "musicalKey": secondary_key
+        },
+        {
+            "type": "development",
+            "startTime": expo_end,
+            "endTime": dev_end,
+            "confidence": 0.75,
+            "description": "Desenvolvimento com modulações",
+            "musicalKey": "instável"
+        },
+        {
+            "type": "recapitulation-theme1",
+            "startTime": dev_end,
+            "endTime": dev_end + (duration - dev_end) * 0.35,
+            "confidence": 0.80,
+            "description": f"Retorno do primeiro tema em {primary_key}",
+            "musicalKey": primary_key
+        },
+        {
+            "type": "recapitulation-transition",
+            "startTime": dev_end + (duration - dev_end) * 0.35,
+            "endTime": dev_end + (duration - dev_end) * 0.45,
+            "confidence": 0.70,
+            "description": "Transição modificada",
+            "musicalKey": primary_key
+        },
+        {
+            "type": "recapitulation-theme2",
+            "startTime": dev_end + (duration - dev_end) * 0.45,
+            "endTime": dev_end + (duration - dev_end) * 0.75,
+            "confidence": 0.80,
+            "description": f"Segundo tema agora em {primary_key}",
+            "musicalKey": primary_key
+        },
+        {
+            "type": "coda",
+            "startTime": dev_end + (duration - dev_end) * 0.75,
+            "endTime": duration,
+            "confidence": 0.75,
+            "description": "Coda final",
+            "musicalKey": primary_key
+        }
     ]
 
     return sections
