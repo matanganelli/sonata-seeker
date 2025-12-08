@@ -320,14 +320,14 @@ def identify_sonata_sections(duration, key_areas, themes, cadences, global_key):
         primary_key = key_areas[0]["key"]
         primary_mode = key_areas[0]["mode"]
 
-   from music21 import key
+    from music21 import key
 
-if primary_mode == "major":
-    tonic = key.Key(primary_key).dominant
-    secondary_key = f"{tonic.name} major"
-else:
-    tonic = key.Key(primary_key).relative
-    secondary_key = f"{tonic.name} major"
+    if primary_mode == "major":
+        tonic = key.Key(primary_key).dominant
+        secondary_key = f"{tonic.name} major"
+    else:
+        tonic = key.Key(primary_key).relative
+        secondary_key = f"{tonic.name} major"
 
     sections = [
         
