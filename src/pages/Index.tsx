@@ -241,7 +241,7 @@ const Index = () => {
             </div>
 
             {/* Analysis results */}
-            {analysis && <SonataStructure analysis={analysis} duration={midiData.duration} />}
+            {analysis && <SonataStructure analysis={analysis} duration={midiData.duration} fileName={midiData.name} />}
           </motion.div>}
 
         {/* Features section when no file is loaded */}
