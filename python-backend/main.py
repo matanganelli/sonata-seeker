@@ -102,6 +102,22 @@ def get_bpm(score):
 
 
 # ================================================================
+#   ACCIDENTAL FORMATTING
+# ================================================================
+
+def format_accidentals(name: str) -> str:
+    """Convert music21 accidental notation to standard notation.
+    E.g., 'E-' -> 'Eb', 'F#' stays 'F#', 'B--' -> 'Bbb'
+    """
+    if not name:
+        return name
+    # Replace '-' with 'b' for flats (but not if it's the note name itself)
+    # music21 uses '-' for flat and '#' for sharp
+    result = name.replace('-', 'b')
+    return result
+
+
+# ================================================================
 #   KEY ANALYSIS
 # ================================================================
 
@@ -109,9 +125,9 @@ def analyze_global_key(score):
     try:
         k = score.analyze('key')
         return {
-            "key": str(k),
+            "key": format_accidentals(str(k)),
             "mode": k.mode,
-            "tonic": str(k.tonic),
+            "tonic": format_accidentals(str(k.tonic)),
             "correlation": float(getattr(k, 'correlationCoefficient', 0.8))
         }
     except:
@@ -155,9 +171,9 @@ def analyze_key_by_notes(score, duration):
         try:
             k = stream.analyze("key")
             key_areas.append({
-                "key": str(k),
+                "key": format_accidentals(str(k)),
                 "mode": k.mode,
-                "tonic": str(k.tonic),
+                "tonic": format_accidentals(str(k.tonic)),
                 "start_offset": start,
                 "end_offset": end,
                 "correlation": float(getattr(k, "correlationCoefficient", 0.8))
@@ -329,10 +345,10 @@ def identify_sonata_sections(duration, key_areas, themes, cadences, global_key):
     try:
         if primary_mode == "major":
             key_obj = m21key.Key(primary_tonic, 'major')
-            secondary_key = f"{key_obj.dominant.name} major"
+            secondary_key = f"{format_accidentals(key_obj.dominant.name)} major"
         else:
             key_obj = m21key.Key(primary_tonic, 'minor')
-            secondary_key = f"{key_obj.relative.tonic.name} major"
+            secondary_key = f"{format_accidentals(key_obj.relative.tonic.name)} major"
     except Exception as e:
         print(f"Error determining secondary key: {e}")
         secondary_key = "V"  # Fallback
