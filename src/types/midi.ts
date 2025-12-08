@@ -48,3 +48,9 @@ export interface SonataAnalysis {
   summary: string;
   musicalInsights: string[];
 }
+
+export interface AIInsights {
+  enhancedInsights: string[];
+  historicalContext: string;
+  technicalAnalysis: string;
+}

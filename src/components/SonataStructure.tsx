@@ -1,10 +1,15 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import type { SonataAnalysis, SonataSectionData } from '@/types/midi';
+import { Sparkles, Loader2 } from 'lucide-react';
+import type { SonataAnalysis, SonataSectionData, AIInsights } from '@/types/midi';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface SonataStructureProps {
   analysis: SonataAnalysis;
   duration: number;
+  fileName?: string;
 }
 
 const SECTION_LABELS: Record<string, { label: string; color: string }> = {
@@ -56,8 +61,46 @@ function SectionBar({ section, duration }: { section: SonataSectionData; duratio
   );
 }
 
-export function SonataStructure({ analysis, duration }: SonataStructureProps) {
+export function SonataStructure({ analysis, duration, fileName }: SonataStructureProps) {
   const { sections, overallConfidence, summary, musicalInsights } = analysis;
+  const [aiInsights, setAiInsights] = useState<AIInsights | null>(null);
+  const [isLoadingInsights, setIsLoadingInsights] = useState(false);
+  const { toast } = useToast();
+
+  const handleGenerateInsights = async () => {
+    setIsLoadingInsights(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-insights`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ analysis, fileName }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Erro ${response.status}`);
+      }
+
+      const data = await response.json();
+      setAiInsights(data);
+      toast({
+        title: "Insights gerados",
+        description: "A IA analisou a estrutura e gerou insights detalhados.",
+      });
+    } catch (err) {
+      console.error('AI insights error:', err);
+      toast({
+        title: "Erro ao gerar insights",
+        description: err instanceof Error ? err.message : 'Erro desconhecido',
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingInsights(false);
+    }
+  };
 
   return (
     <motion.div
@@ -146,11 +189,34 @@ export function SonataStructure({ analysis, duration }: SonataStructureProps) {
 
       {/* Summary */}
       <div className="bg-card/50 backdrop-blur-sm rounded-xl border border-border p-6">
-        <h3 className="text-lg font-heading font-semibold mb-3">Análise</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-heading font-semibold">Análise</h3>
+          {!aiInsights && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGenerateInsights}
+              disabled={isLoadingInsights}
+              className="gap-2"
+            >
+              {isLoadingInsights ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Gerando...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Gerar Insights com IA
+                </>
+              )}
+            </Button>
+          )}
+        </div>
         <p className="text-muted-foreground mb-4">{summary}</p>
         
         {musicalInsights.length > 0 && (
-          <div>
+          <div className="mb-4">
             <h4 className="text-sm font-medium mb-2">Insights Musicais:</h4>
             <ul className="space-y-2">
               {musicalInsights.map((insight, idx) => (
@@ -167,6 +233,54 @@ export function SonataStructure({ analysis, duration }: SonataStructureProps) {
               ))}
             </ul>
           </div>
+        )}
+
+        {/* AI Enhanced Insights */}
+        {aiInsights && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6 pt-6 border-t border-border"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h4 className="text-lg font-heading font-semibold text-primary">Análise Aprofundada por IA</h4>
+            </div>
+
+            {aiInsights.historicalContext && (
+              <div className="mb-4">
+                <h5 className="text-sm font-medium mb-1">Contexto Histórico:</h5>
+                <p className="text-sm text-muted-foreground">{aiInsights.historicalContext}</p>
+              </div>
+            )}
+
+            {aiInsights.technicalAnalysis && (
+              <div className="mb-4">
+                <h5 className="text-sm font-medium mb-1">Análise Técnica:</h5>
+                <p className="text-sm text-muted-foreground">{aiInsights.technicalAnalysis}</p>
+              </div>
+            )}
+
+            {aiInsights.enhancedInsights?.length > 0 && (
+              <div>
+                <h5 className="text-sm font-medium mb-2">Insights Detalhados:</h5>
+                <ul className="space-y-2">
+                  {aiInsights.enhancedInsights.map((insight, idx) => (
+                    <motion.li
+                      key={idx}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="flex items-start gap-2 text-sm text-muted-foreground"
+                    >
+                      <span className="text-primary mt-1">✦</span>
+                      {insight}
+                    </motion.li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </motion.div>
         )}
       </div>
     </motion.div>
