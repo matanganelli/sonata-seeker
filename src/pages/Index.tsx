@@ -136,7 +136,7 @@ const Index = () => {
     } catch (err) {
       console.error('Analysis error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
-      const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('504') || errorMessage.includes('non-2xx');
+      const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('504') || errorMessage.includes('non-2xx') || errorMessage.includes('abort') || errorMessage.includes('Failed to fetch');
       if (isTimeout && midiData) {
         // Use mock data when backend is unavailable
         const mockAnalysis = generateMockAnalysis(midiData.duration);
