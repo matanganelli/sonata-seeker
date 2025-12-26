@@ -6,9 +6,7 @@ A full-stack system for automatic structural analysis of classical sonata form u
 
 This project is a complete application (frontend + backend) designed to analyze MIDI files and automatically identify the structural components of Classical Sonata Form — including Exposition, Development, Recapitulation, cadences, tonal areas, and thematic blocks — using computational musicology techniques.
 
-The system combines a modern React frontend with a Python/Music21 backend and is fully deployable on Google Cloud Run.
-
-Perfect for academic work, music analysis tools, and portfolio demonstration.
+The system combines a modern React frontend with a Python/Music21 backend and is fully deployable on Render.
 
 https://preview--sonata-structure-finder.lovable.app/?__lovable_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiY25na285dkhJeWRaNzRBdWlVQlRkdHNrU3NYMiIsInByb2plY3RfaWQiOiIwYjFkMTRlMC02ZTlmLTQ1ZTQtOWQ4Yi1lYmFjNGNhYWRhMmYiLCJub25jZSI6IjYwYmNjY2VmYTljZTIyY2U2NmU2NzJhNDhmOWJhNWNjIiwiaXNzIjoibG92YWJsZS1hcGkiLCJzdWIiOiIwYjFkMTRlMC02ZTlmLTQ1ZTQtOWQ4Yi1lYmFjNGNhYWRhMmYiLCJhdWQiOlsibG92YWJsZS1hcHAiXSwiZXhwIjoxNzY1NzY4OTUzLCJuYmYiOjE3NjUxNjQxNTMsImlhdCI6MTc2NTE2NDE1M30.W6jgpPiLYFc-x21aikTa3l3mrqVC5bA_hEoYB5f8MTE
 
