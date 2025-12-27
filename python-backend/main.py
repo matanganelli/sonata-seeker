@@ -16,6 +16,7 @@ import numpy as np
 
 # ================================================================
 #   FIX: Disable external dependencies for cloud environment
+# evitar autodownload do music21 e timeout
 # ================================================================
 music21.environment.set('autoDownload', 'deny')
 
