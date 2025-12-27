@@ -8,7 +8,7 @@ This project is a complete application (frontend + backend) designed to analyze 
 
 The system combines a modern React frontend with a Python/Music21 backend and is fully deployable on Render.
 
-[https://preview--sonata-structure-finder.lovable.app/
+(https://sonata-structure-finder.lovable.app)
 
 🚀 Tech Stack
 Frontend
