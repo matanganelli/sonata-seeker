@@ -102,7 +102,7 @@ const Index = () => {
       const arrayBuffer = await currentFileRef.current.arrayBuffer();
       const base64 = btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
 
-      // Call the Edge Function with extended timeout (5 minutes for cold start + analysis)
+      // Chama a Edge Function com tempo limite estendido (5 minutos para cold start + análise)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes
 
